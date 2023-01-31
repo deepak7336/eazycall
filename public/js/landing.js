@@ -1,114 +1,107 @@
 const createButton = document.querySelector("#createroom");
-const videoCont = document.querySelector('.video-self');
-const codeCont = document.querySelector('#roomcode');
-const joinBut = document.querySelector('#joinroom');
-const mic = document.querySelector('#mic');
-const cam = document.querySelector('#webcam');
+const videoCont = document.querySelector(".video-self");
+const codeCont = document.querySelector("#roomcode");
+const joinBut = document.querySelector("#joinroom");
+const mic = document.querySelector("#mic");
+const cam = document.querySelector("#webcam");
 
 let micAllowed = 1;
 let camAllowed = 1;
+let userMedia = new MediaStream();
+videoCont.srcObject = userMedia;
 
-let mediaConstraints = { video: true, audio: true };
+const addMediaConstraint = function (constraint) {
+  if (constraint.video || constraint.audio) {
+    navigator.mediaDevices.getUserMedia(constraint).then((localstream) => {
+      localstream.getTracks().forEach((track) => {
+        console.log("adding ", track);
+        userMedia.addTrack(track);
+      });
+    });
+  }
+};
+addMediaConstraint({ video: 1, audio: 1 });
 
-navigator.mediaDevices.getUserMedia(mediaConstraints)
-    .then(localstream => {
-        videoCont.srcObject = localstream;
-    })
+const removeMediaConstraint = function (type) {
+  userMedia.getTracks().forEach((track) => {
+    if (track.kind === type) {
+      console.log("removing ", track);
+      userMedia.removeTrack(track);
+    }
+  });
+};
 
 function uuidv4() {
-    return 'xxyxyxxyx'.replace(/[xy]/g, function (c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+  return "xxyxyxxyx".replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
-const createroomtext = 'Creating Room...';
+const createroomtext = "Creating Room...";
 
-createButton.addEventListener('click', (e) => {
-    e.preventDefault();
-    createButton.disabled = true;
-    createButton.innerHTML = 'Creating Room';
-    createButton.classList = 'createroom-clicked';
+createButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  createButton.disabled = true;
+  createButton.innerHTML = "Creating Room";
+  createButton.classList = "createroom-clicked";
 
-    setInterval(() => {
-        if (createButton.innerHTML < createroomtext) {
-            createButton.innerHTML = createroomtext.substring(0, createButton.innerHTML.length + 1);
-        }
-        else {
-            createButton.innerHTML = createroomtext.substring(0, createButton.innerHTML.length - 3);
-        }
-    }, 500);
+  setInterval(() => {
+    if (createButton.innerHTML < createroomtext) {
+      createButton.innerHTML = createroomtext.substring(
+        0,
+        createButton.innerHTML.length + 1
+      );
+    } else {
+      createButton.innerHTML = createroomtext.substring(
+        0,
+        createButton.innerHTML.length - 3
+      );
+    }
+  }, 500);
 
-    //const name = nameField.value;
-    location.href = `/room.html?room=${uuidv4()}`;
+  //const name = nameField.value;
+  location.href = `/room.html?room=${uuidv4()}`;
 });
 
-joinBut.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (codeCont.value.trim() == "") {
-        codeCont.classList.add('roomcode-error');
-        return;
-    }
-    const code = codeCont.value;
-    location.href = `/room.html?room=${code}`;
-})
+joinBut.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (codeCont.value.trim() == "") {
+    codeCont.classList.add("roomcode-error");
+    return;
+  }
+  const code = codeCont.value;
+  location.href = `/room.html?room=${code}`;
+});
 
-codeCont.addEventListener('change', (e) => {
-    e.preventDefault();
-    if (codeCont.value.trim() !== "") {
-        codeCont.classList.remove('roomcode-error');
-        return;
-    }
-})
+codeCont.addEventListener("change", (e) => {
+  e.preventDefault();
+  if (codeCont.value.trim() !== "") {
+    codeCont.classList.remove("roomcode-error");
+    return;
+  }
+});
 
-cam.addEventListener('click', () => {
-    if (camAllowed) {
-        mediaConstraints = { video: false, audio: micAllowed ? true : false };
-        navigator.mediaDevices.getUserMedia(mediaConstraints)
-            .then(localstream => {
-                videoCont.srcObject = localstream;
-            })
+cam.addEventListener("click", () => {
+  camAllowed ^= 1;
+  if (!camAllowed) removeMediaConstraint("video");
+  mediaConstraints = { video: camAllowed };
+  addMediaConstraint(mediaConstraints);
+  cam.classList = "nodevice";
+  cam.innerHTML = camAllowed
+    ? `<i class="fas fa-video"/>`
+    : `<i class="fas fa-video-slash"/>`;
+});
 
-        cam.classList = "nodevice";
-        cam.innerHTML = `<i class="fas fa-video-slash"></i>`;
-        camAllowed = 0;
-    }
-    else {
-        mediaConstraints = { video: true, audio: micAllowed ? true : false };
-        navigator.mediaDevices.getUserMedia(mediaConstraints)
-            .then(localstream => {
-                videoCont.srcObject = localstream;
-            })
-
-        cam.classList = "device";
-        cam.innerHTML = `<i class="fas fa-video"></i>`;
-        camAllowed = 1;
-    }
-})
-
-mic.addEventListener('click', () => {
-    if (micAllowed) {
-        mediaConstraints = { video: camAllowed ? true : false, audio: false };
-        navigator.mediaDevices.getUserMedia(mediaConstraints)
-            .then(localstream => {
-                videoCont.srcObject = localstream;
-            })
-
-        mic.classList = "nodevice";
-        mic.innerHTML = `<i class="fas fa-microphone-slash"></i>`;
-        micAllowed = 0;
-    }
-    else {
-        mediaConstraints = { video: camAllowed ? true : false, audio: true };
-        navigator.mediaDevices.getUserMedia(mediaConstraints)
-            .then(localstream => {
-                videoCont.srcObject = localstream;
-            })
-
-        mic.innerHTML = `<i class="fas fa-microphone"></i>`;
-        mic.classList = "device";
-        micAllowed = 1;
-    }
-})
+mic.addEventListener("click", () => {
+  micAllowed ^= 1;
+  if (!micAllowed) removeMediaConstraint("audio");
+  addMediaConstraint({ audio: micAllowed });
+  mic.classList = "nodevice";
+  mic.innerHTML = micAllowed
+    ? `<i class="fas fa-microphone"/>`
+    : `<i class="fas fa-microphone-slash"/>`;
+});
 
 //
