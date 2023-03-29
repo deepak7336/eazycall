@@ -223,7 +223,7 @@ function handleGetUserMediaError(e) {
     case "NotFoundError":
       alert(
         "Unable to open your call because no camera and/or microphone" +
-          "were found."
+        "were found."
       );
       break;
     case "SecurityError":
